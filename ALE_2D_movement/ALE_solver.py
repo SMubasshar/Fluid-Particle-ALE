@@ -1,7 +1,7 @@
 from dolfin import *
 import numpy as np
 from mesh_generator import Ball, create_mesh
-from admesh4py.admesh4py import admesh
+from admesh_ext import admesh_ext as admesh
 import os
 import sys
 import time
@@ -107,7 +107,7 @@ class FluidSystem(object):
             theta (float, optional): Theta parameter of the theta difference scheme. Defaults to 1.0.
             nu (float, optional): Kinematic viscosity. Defaults to 0.01.
             rho_f (float, optional): Density of the fluid. Defaults to 1.0e3.
-            rho_ball (float, optional): Density of the balls, is used if density is not specified separately. Defaults to 1.0e3.
+            rho_ball (float, optional): Density of the balls, density can be specified separately if set to 0. Defaults to 1.0e3.
             mesh_perimeters (list, optional): List of distances around the balls where the mesh will be finer. Defaults to [0.4, 0.1].
             g (float, optional): Gravitational acceleration.
             beta_h (float, optional): Parameter in the Nitsche method. Defaults to 1000.
@@ -155,14 +155,22 @@ class FluidSystem(object):
         self.filename=filename
         self.output_file = "logs/"+filename+"_log.txt"
         
+        if not os.path.exists("logs"):
+            os.makedirs("logs")
+            
         if ("--mesh" in sys.argv):
             self.print("Creating initial mesh")
             self.create_init_mesh(**kwargs)
             exit()
         
         if not os.path.exists("results/results_%s/mesh_init.xdmf" % self.filename):
-            self.print("Error: Mesh file does not exist")
+            self.print("================================")
+            self.print("ERROR: Mesh file does not exist.")
+            self.print("================================")
             return
+        
+        if not os.path.exists("results"):
+            os.makedirs("results")  
         
         self.print(f"Creating problem with th following parameters:\nball_count= {len(balls)}\nsizes= {sizes}\ndt= {dt}\ntheta= {theta}\n")
         
@@ -706,20 +714,27 @@ class FluidSystem(object):
 
 
 if __name__ == "__main__":
-    problem = FluidSystem("ALE_fall", 
-                          [Ball((0.2, 0.2), 0.05)], 
-                          (2.2, 0.41),
-                          mesh_perimeters=[0.5,0.1,0.05], 
-                          theta=1,
-                          dt=0.05,
-                          nu=1,
-                          rho_fluid=1,
-                          rho_ball=1/(np.pi*(0.2**2)))
-
-    t_end = 2
+    problem=FluidSystem("ALE_fall", 
+                  [Ball((2,3), 0.7,0.1),Ball((3,7), 0.4,5)],
+                  (5, 10),
+                  t=0,
+                  mesh_perimeters=[0.5,0.2,0.1], 
+                  dt=0.05,
+                  nu=1e-1,
+                  rho_fluid=1,
+                  g=9.8,
+                  useADmesh=True,
+                  starting_density=0.2,
+                  density_falloff=1,
+                  remeshing_period=2,
+                  density_cap=1,
+                  linear=False,
+                  allow_rotation=True, 
+                  )
     
     t=0
+    t_end=1.5
+    
     while t < t_end:
     
         t = problem.solve_step()
-    
