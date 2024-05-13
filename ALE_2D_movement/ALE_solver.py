@@ -715,7 +715,7 @@ class FluidSystem(object):
 
 if __name__ == "__main__":
     problem=FluidSystem("ALE_fall", 
-                  [Ball((2,3), 0.7,0.1),Ball((3,7), 0.4,5)],
+                  [Ball((2,3), 0.7,0.1),Ball((3,7), 0.4,5), Ball((1,3), 0.4,5)],
                   (5, 10),
                   t=0,
                   mesh_perimeters=[0.5,0.2,0.1], 
